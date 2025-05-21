@@ -8,9 +8,11 @@ import { toast } from "sonner";
 import { LOGIN_ROUTE, SIGNUP_ROUTE } from "@/utils/constants";
 import { apiClient } from "@/lib/api-client";
 import { useNavigate } from "react-router-dom";
+import { useAppStore } from "@/store";
 
 function Auth() {
   const navigate = useNavigate();
+  const { setUserInfo } = useAppStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -54,10 +56,17 @@ function Auth() {
           withCredentials: true,
         }
       );
+      // Check if the user ID exists in the response data (i.e., successful login/signup)
       if (response.data.user.id) {
+        // Save the user information in Zustand global state
+        setUserInfo(response.data.user);
+
+        // If the user's profile is already set up, navigate to the chat screen
         if (response.data.user.profileSetup) navigate("/chat");
+        // Otherwise, redirect the user to complete their profile
         else navigate("/profile");
       }
+
       console.log({ response });
     }
   };
@@ -72,7 +81,8 @@ function Auth() {
           withCredentials: true,
         }
       );
-      if (response.status === 200) {
+      if (response.status === 201) {
+        setUserInfo(response.data.user);
         navigate("/profile");
       }
       console.log({ response });
