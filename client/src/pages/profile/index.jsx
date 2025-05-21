@@ -5,7 +5,7 @@ function Profile() {
   return (
     <div>
       Profile
-      <div>{userInfo.email}</div>
+      <div>Email: {userInfo.email}</div>
     </div>
   );
 }
