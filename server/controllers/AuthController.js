@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import User from "../models/UserModel.js";
 import { compare } from "bcryptjs";
+import { renameSync, unlinkSync } from "fs";
+import path from "path"; // at the top of the file
 
 // Token max age: 3 days in milliseconds
 const maxAge = 3 * 24 * 60 * 60 * 1000;
@@ -161,6 +163,52 @@ export const updateProfile = async (req, res, next) => {
         color: userData.color,
       },
     });
+  } catch (error) {
+    console.log({ error });
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const addProfileImage = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ message: "Please provide a profile image" });
+    }
+
+    const date = Date.now();
+    let fileName = "uploads/profiles/" + date + req.file.originalname;
+    renameSync(req.file.path, fileName);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.userId,
+      {
+        image: fileName,
+      },
+      { new: true, runValidators: true }
+    );
+
+    return res.status(200).json({
+      image: updatedUser.image,
+    });
+  } catch (error) {
+    console.error("Image Upload Error:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const removeProfileImage = async (req, res, next) => {
+  try {
+    const { userId } = req.user;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.image) {
+      unlinkSync(user.image);
+    }
+    user.image = null;
+    await user.save();
+    return res.status(200).json({ message: "Image removed successfully" });
   } catch (error) {
     console.log({ error });
     return res.status(500).json({ message: error.message });
