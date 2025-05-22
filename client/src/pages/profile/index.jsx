@@ -2,11 +2,14 @@ import { useAppStore } from "@/store";
 import { useNavigate } from "react-router-dom";
 import { IoArrowBack } from "react-icons/io5";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { colors, getColor } from "@/lib/utils";
 import { FaPlus, FaTrash } from "react-icons/fa";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { apiClient } from "@/lib/api-client";
+import { UPDATE_PROFILE_ROUTE } from "@/utils/constants";
 
 function Profile() {
   const navigate = useNavigate();
@@ -17,7 +20,43 @@ function Profile() {
   const [hovered, setHovered] = useState(false);
   const [selectedColor, setSelectedColor] = useState(0);
 
-  const saveChanges = async () => {};
+  useEffect(() => {
+    if (userInfo.profileSetup) {
+      setFirstName(userInfo.firstName);
+      setLastName(userInfo.lastName);
+      // setImage(userInfo.image);
+      setSelectedColor(userInfo.color);
+    }
+  }, [userInfo]);
+  const validateProfile = () => {
+    if (!firstName) {
+      toast.error("First Name is required");
+      return false;
+    }
+    if (!lastName) {
+      toast.error("Last Name is required");
+      return false;
+    }
+    return true;
+  };
+  const saveChanges = async () => {
+    if (validateProfile()) {
+      try {
+        const response = await apiClient.post(
+          UPDATE_PROFILE_ROUTE,
+          { firstName, lastName, color: selectedColor },
+          { withCredentials: true }
+        );
+        if (response.status === 200 && response.data) {
+          setUserInfo({ ...response.data.user });
+          toast.success("Profile updated successfully");
+          navigate("/chat");
+        }
+      } catch (error) {
+        console.log({ error });
+      }
+    }
+  };
   return (
     <div className="bg-[#1b1c24] h-[100vh] flex items-center justify-center flex-col gap-10">
       <div className="flex flex-col gap-10 w-[80vw] md:w-max">
@@ -74,7 +113,6 @@ function Profile() {
               <Input
                 placeholder="First Name"
                 type="text"
-                disabled
                 onChange={(e) => setFirstName(e.target.value)}
                 value={firstName}
                 className="rounded-lg p-6 bg-[#2c2e3b] border-none"
@@ -84,7 +122,6 @@ function Profile() {
               <Input
                 placeholder="Last Name"
                 type="text"
-                disabled
                 onChange={(e) => setLastName(e.target.value)}
                 value={lastName}
                 className="rounded-lg p-6 bg-[#2c2e3b] border-none"

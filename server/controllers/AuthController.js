@@ -128,3 +128,41 @@ export const getUserInfo = async (req, res, next) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+export const updateProfile = async (req, res, next) => {
+  try {
+    const { userId } = req.user;
+    const { firstName, lastName, color } = req.body;
+    if (!firstName || !lastName)
+      return res
+        .status(400)
+        .json({ message: "Please provide firstName, lastName and color" });
+
+    const userData = await User.findByIdAndUpdate(
+      userId,
+      {
+        firstName,
+        lastName,
+        color,
+        profileSetup: true,
+      },
+      { new: true, runValidators: true }
+    );
+    if (!userData) return res.status(404).json({ message: "User not found" });
+
+    return res.status(200).json({
+      user: {
+        id: userData.id,
+        email: userData.email,
+        profileSetup: userData.profileSetup,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        image: userData.image,
+        color: userData.color,
+      },
+    });
+  } catch (error) {
+    console.log({ error });
+    return res.status(500).json({ message: error.message });
+  }
+};
